@@ -19,6 +19,7 @@
 
 #define CFG_ADDR 0
 #define RESET_TIME 200
+//#define SERIAL_DEBUG
 
 void resetDrive(void);
 void swapDisk(void);
@@ -39,10 +40,10 @@ struct Action actions[] = {
     {50, NULL, false}, /* Skip button glitches */
     {200, resetDrive, false},
     {500, swapDisk, true},
-    {1200, warmRestart, true},
-    {1700, coldRestart, true},
-    {2200, diskAddrSwap, true},
-    {2700, kernalSwap, true}
+    {1000, warmRestart, true},
+    {1500, coldRestart, true},
+    {2000, diskAddrSwap, true},
+    {2500, kernalSwap, true}
 };
 union Config{
     struct {
@@ -61,23 +62,23 @@ static union Config cfg;
 void main(void)
 {
     initPeripherials();
+#ifdef SERIAL_DEBUG
     initSerial();
-    
+#endif
     cfg.val = eeprom_read(0);
     applyConfiguration();
-    
+#ifdef SERIAL_DEBUG
     printf("We handle %u actions\n", nbActions);
     printf("Actual configuration:\n");
     printf("Internal drive as 8 : %s\n", cfg.cfg.drvAddr8 ? "yes" : "no");
     printf("Second kernal selected : %s\n", cfg.cfg.kernal1 ? "yes" : "no");
-    
+#endif  
     ms_t lastBtnEdge = 0;
     bool btnActive = false;
     uint8_t selAction = 0;
     while(1)
-    {   
+    {  
         if(!BUTTON){
-            LED = 1;
             //Button is pressed
             if(!btnActive){
                 btnActive = true;
@@ -92,7 +93,9 @@ void main(void)
             }
             if((i-1) != selAction) {
                 selAction = i-1;
+#ifdef SERIAL_DEBUG
                 printf("%u->%u\n", (int)selAction, (int)duration);
+#endif
             }
             
             if(actions[selAction].beep && 
@@ -102,20 +105,24 @@ void main(void)
                 BUZZER = 1;
             }
         }else{
-            LED = 0;
             BUZZER = 1;
             if(btnActive){
-                if(actions[selAction].opt)
+                btnActive = false;
+                if((selAction != 0) && (actions[selAction].opt)){
                     actions[selAction].opt();
+                }
+                selAction = 0;
             }
-            btnActive = false;
         }
     }
 }
 
 void resetDrive(void)
 {
+#ifdef SERIAL_DEBUG
     printf("Reset drive\n");
+#endif
+    PORTB = 0x0;
     nDRVRESET = 0;
     __delay_ms(RESET_TIME);
     nDRVRESET = 1;
@@ -123,7 +130,9 @@ void resetDrive(void)
 
 void swapDisk(void)
 {
+#ifdef SERIAL_DEBUG
     printf("Swap disk\n");
+#endif
     //Put to low
     SDIECSWAP = 0;
     __delay_ms(300);
@@ -133,7 +142,9 @@ void swapDisk(void)
 
 void warmRestart(void)
 {
+#ifdef SERIAL_DEBUG
     printf("Warm restart\n");
+#endif
     nRESET = 0;
     __delay_ms(RESET_TIME);
     nRESET = 1;
@@ -141,7 +152,9 @@ void warmRestart(void)
 
 void coldRestart(void)
 {
+#ifdef SERIAL_DEBUG
     printf("Cold restart\n");
+#endif
     nRESET = 0;
     nEXROM = 0;
     __delay_ms(RESET_TIME);
@@ -152,7 +165,9 @@ void coldRestart(void)
 
 void diskAddrSwap(void)
 {
+#ifdef SERIAL_DEBUG
     printf("Disk addr swap\n");
+#endif
     cfg.cfg.drvAddr8 = !cfg.cfg.drvAddr8;
     applyConfiguration();
     eeprom_write(CFG_ADDR, cfg.val);
@@ -161,7 +176,9 @@ void diskAddrSwap(void)
 
 void kernalSwap(void)
 {
+#ifdef SERIAL_DEBUG
     printf("Kernal swap\n");
+#endif
     cfg.cfg.kernal1 = !cfg.cfg.kernal1;
     applyConfiguration();
     eeprom_write(CFG_ADDR, cfg.val);

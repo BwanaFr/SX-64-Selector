@@ -7,8 +7,8 @@
 
 #include <xc.h>
 #include "interrupts.h"
-static volatile ms_t millisValue=0;
 
+static volatile ms_t millisValue=0;
 
 // Timer 1 is configured with a 1:4 scaler
 // Given the CLK freq of 19,600,000 Hz, Fosc/4 = 4,900,000Hz
