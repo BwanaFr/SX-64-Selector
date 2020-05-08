@@ -109,7 +109,9 @@ void main(void)
             if(btnActive){
                 btnActive = false;
                 if((selAction != 0) && (actions[selAction].opt)){
+                    PORTB = 0x1;
                     actions[selAction].opt();
+                    PORTB = 0x0;
                 }
                 selAction = 0;
             }
@@ -122,7 +124,6 @@ void resetDrive(void)
 #ifdef SERIAL_DEBUG
     printf("Reset drive\n");
 #endif
-    PORTB = 0x0;
     nDRVRESET = 0;
     __delay_ms(RESET_TIME);
     nDRVRESET = 1;
